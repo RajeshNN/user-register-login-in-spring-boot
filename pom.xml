@@ -32,8 +32,8 @@
 	<dependencies>
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
-			<artifactId>java-dotenv</artifactId>
-			<version>1.0.3</version>
+			<artifactId>dotenv-java</artifactId>
+			<version>2.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -45,17 +45,22 @@
 			<!-- In a Spring Boot project, you usually omit the <version> and <scope>
                  because Spring Boot manages the version automatically. -->
 		</dependency>
-		<!--
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
-		</dependency>
-		-->
+        <!--
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+                </dependency>
+                -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
