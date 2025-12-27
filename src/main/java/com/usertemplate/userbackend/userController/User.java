@@ -8,6 +8,9 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
+
 @Entity
 @Getter
 @Setter
@@ -20,6 +23,7 @@ public class User {
     private String username;
     private String email;
     private String password; // Should store a hashed password
+    private Date lastLogout;
 
     // Getters and Setters are required by JPA/Hibernate
     // (Omitted for brevity in this snippet)

@@ -1,10 +1,14 @@
 package com.usertemplate.userbackend.userController;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,13 +38,16 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public Optional<User> loginUser(String username, String password) {
-        Optional<User> user = userRepository.findByUsername(username);
-        if(user.isEmpty() || !passwordEncoder.matches(user.get().getPassword(), password)) {
-            return Optional.empty();
-        }
-        return user;
+
+
+    @Transactional
+    public Date setLogoutTime(String username) {
+        User user = userRepository.findByUsername(username).get();
+        user.setLastLogout(new Date(System.currentTimeMillis()));
+        userRepository.saveAndFlush(user);
+        return user.getLastLogout();
     }
+
 
     // Save/Create a User (Transactional ensures database consistency)
     @Transactional

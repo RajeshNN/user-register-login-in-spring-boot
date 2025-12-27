@@ -1,22 +1,36 @@
 package com.usertemplate.userbackend.userController;
 
+
+import com.usertemplate.userbackend.security.jwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+
 import java.security.Principal;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/jpa/users")
 public class UserJpaController {
 
     private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final jwtUtil jwtUtil;
 
-    @Autowired
-    public UserJpaController(UserService userService) {
+
+    public UserJpaController(UserService userService, jwtUtil jwtUtil,  AuthenticationManager authenticationManager) {
+        this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
         this.userService = userService;
     }
 
@@ -26,8 +40,8 @@ public class UserJpaController {
     }
 
     @GetMapping("/home")
-    public ResponseEntity<User> getLoggedInUser(@RequestBody Principal principal) {
-        Optional<User> user = userService.findUserByUsername(principal.getName());
+    public ResponseEntity<User> getLoggedInUser(@AuthenticationPrincipal UserDetails userDetails) {
+        Optional<User> user = userService.findUserByUsername(userDetails.getUsername());
         if (user.isEmpty()) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         else return new ResponseEntity<>(user.get(), HttpStatus.OK);
     }
@@ -42,19 +56,40 @@ public class UserJpaController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@ModelAttribute loginRequest loginRequest) {
-        String username = loginRequest.getUsername();
-        String password = loginRequest.getPassword();
+    public ResponseEntity<Map<String, String>> login(@RequestBody loginRequest request) {
+        String username = request.getUsername();
+        String password = request.getPassword();
         if(username.isEmpty() || password.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        Optional<User> user = userService.loginUser(username, password);
-        return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.badRequest().build());
+        Authentication unauthenticated =
+                UsernamePasswordAuthenticationToken.unauthenticated(username, password);
+        Authentication authenticationResponse =
+                authenticationManager.authenticate(unauthenticated);
+        if (authenticationResponse.isAuthenticated()) {
+            String token = jwtUtil.generateToken(username);
+            // Set context
+            SecurityContextHolder.getContext().setAuthentication(authenticationResponse);
+            // Return token to client
+            return ResponseEntity.ok(Map.of("access_token", token, "token_type", "Bearer"));
+        } else {
+            throw new UsernameNotFoundException("Invalid user request");
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(Authentication authentication) {
+        if(authentication != null &&  authentication.isAuthenticated()) {
+            Date logoutTime = userService.setLogoutTime(authentication.getName());
+            return ResponseEntity.ok(Map.of("logout_time", logoutTime.toString()));
+        }
+        else return  ResponseEntity.badRequest().build();
     }
 
     @PostMapping("/register")
     public ResponseEntity<User> createUser(@ModelAttribute User newUser) {
         if(userService.findUserByUsername(newUser.getUsername()).isEmpty()){
+            newUser.setLastLogout(new Date(System.currentTimeMillis()));
             User savedUser = userService.saveUser(newUser);
             // Returns 201 Created status
             return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);

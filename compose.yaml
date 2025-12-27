@@ -12,7 +12,18 @@ services:
       - "5432:5432" # Maps host port 5432 to container port 5432
     volumes:
       - pgdata:/var/lib/postgresql/data # Persist data to a named volume
+  app:
+    build: .
+    ports:
+      - '8080:8080'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/${DB_NAME}'
+      - 'SPRING_DATASOURCE_USERNAME=${DB_USER}'
+      - 'SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}'
+    depends_on:
+      - db
+    volumes:
+      - ./.env:/app/.env
 
 volumes:
   pgdata: # Define the named volume for data persistence
-
